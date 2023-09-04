@@ -35,7 +35,6 @@ class PaginationReducer<T : Any> : Reducer<State<T>, Message<T>> {
                                 nextPage = nextPage + 1
                             )
                         }
-
                     }
 
                     else -> this
@@ -54,7 +53,6 @@ class PaginationReducer<T : Any> : Reducer<State<T>, Message<T>> {
 
             is Message.StartPageLoading -> {
                 when (this) {
-
                     is State.Loaded -> {
                         copy(pages = pages.onlyLoaded() + msg.loadingPage)
                     }

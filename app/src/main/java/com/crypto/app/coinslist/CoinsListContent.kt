@@ -117,7 +117,7 @@ fun CoinsListContent(
                             }
 
                             is Page.Loading.PageWithPlaceholders -> {
-                                itemsIndexed(page.placeHolders) { index, _ ->
+                                itemsIndexed(page.placeholders) { index, _ ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()

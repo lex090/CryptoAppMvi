@@ -7,7 +7,7 @@ sealed interface Page<out T : Any> {
         data object Simple : Loading
 
         data class PageWithPlaceholders(
-            val placeHolders: List<Unit>
+            val placeholders: List<Unit>
         ) : Loading
     }
 
