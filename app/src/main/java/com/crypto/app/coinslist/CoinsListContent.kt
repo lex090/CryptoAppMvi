@@ -100,7 +100,9 @@ fun CoinsListContent(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(text = item.symbol)
-                                        Text(text = (parentIndex + index).toString())
+                                        Text(
+                                            text = (valueState.perPage * parentIndex + index).toString()
+                                        )
                                     }
                                 }
                             }
