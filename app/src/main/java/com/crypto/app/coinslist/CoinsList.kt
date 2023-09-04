@@ -28,7 +28,7 @@ class RealCoinsList(
             paginationRepository = repository,
             storeFactory = storeFactory,
         ).create(
-            perPage = 40,
+            perPage = 80,
             startingPage = 1
         )
     }

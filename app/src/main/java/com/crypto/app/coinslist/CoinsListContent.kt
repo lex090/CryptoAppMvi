@@ -56,8 +56,11 @@ fun CoinsListContent(
 
             LaunchedEffect(lazyColumnState) {
                 snapshotFlow {
-                    (lazyColumnState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-                        ?: 0) >= lazyColumnState.layoutInfo.totalItemsCount - 4
+                    val lastVisibleItemIndex =
+                        lazyColumnState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                    val gap = lazyColumnState.layoutInfo.totalItemsCount - 4
+
+                    lastVisibleItemIndex > gap.coerceAtLeast(0)
                 }.distinctUntilChanged()
                     .collect {
                         if (it) {
