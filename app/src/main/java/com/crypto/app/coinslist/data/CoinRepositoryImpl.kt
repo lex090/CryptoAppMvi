@@ -19,7 +19,8 @@ class CoinRepositoryImpl(
 
                 ShortCoin(
                     id = CoinId(id = it.id),
-                    symbol = it.symbol
+                    symbol = it.symbol,
+                    counter = 0
                 )
             }
             Result.success(data)

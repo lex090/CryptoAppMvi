@@ -63,7 +63,9 @@ interface PaginationStore<T : Any> : Store<Intent, State<T>, Label<T>> {
     }
 
     sealed interface Label<T : Any> {
-//        data class PagesWillBeUpdated<T : Any>(val pages: List<Page<T>>) : Label<T>
+        data class PagesWillBeUpdating<T : Any>(
+            val state: State<T>
+        ) : Label<T>
     }
 }
 

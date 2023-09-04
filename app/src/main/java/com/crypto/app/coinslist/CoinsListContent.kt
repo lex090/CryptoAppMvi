@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.jetpack.subscribeAsState
+import com.crypto.app.coinslist.updating.CoinsListUpdatingStore
 import com.crypto.app.pagination.Page
 import com.crypto.app.pagination.PaginationStore
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -31,122 +32,131 @@ fun CoinsListContent(
 ) {
     val state = component.state.subscribeAsState()
 
-    when (val valueState = state.value) {
-        is PaginationStore.State.Empty -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "EmptyList")
-            }
-        }
-
-        is PaginationStore.State.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Error: ${valueState.message}")
-            }
-        }
-
-        is PaginationStore.State.Loaded -> {
-
-            val lazyColumnState = rememberLazyListState()
-
-            LaunchedEffect(lazyColumnState) {
-                snapshotFlow {
-                    val lastVisibleItemIndex =
-                        lazyColumnState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                    val gap = lazyColumnState.layoutInfo.totalItemsCount - 4
-
-                    lastVisibleItemIndex > gap.coerceAtLeast(0)
-                }.distinctUntilChanged()
-                    .collect {
-                        if (it) {
-                            component.onNeedLoadForwardItems()
-                        }
+    when (val firstState = state.value) {
+        is CoinsListUpdatingStore.State.PaginationState -> {
+            when (val valueState = firstState.state) {
+                is PaginationStore.State.Empty -> {
+                    Box(
+                        modifier = modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "EmptyList")
                     }
-            }
+                }
 
-            Box(modifier = modifier.fillMaxSize()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = lazyColumnState
-                ) {
-                    valueState.pages.forEachIndexed { parentIndex, page ->
-                        when (page) {
-                            is Page.Error -> {
-                                item {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(64.dp)
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(text = "Error while loading")
-                                    }
+                is PaginationStore.State.Error -> {
+                    Box(
+                        modifier = modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Error: ${valueState.message}")
+                    }
+                }
+
+                is PaginationStore.State.Loaded -> {
+
+                    val lazyColumnState = rememberLazyListState()
+
+                    LaunchedEffect(lazyColumnState) {
+                        snapshotFlow {
+                            val lastVisibleItemIndex =
+                                lazyColumnState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                            val gap = lazyColumnState.layoutInfo.totalItemsCount - 4
+
+                            lastVisibleItemIndex > gap.coerceAtLeast(0)
+                        }.distinctUntilChanged()
+                            .collect {
+                                if (it) {
+                                    component.onNeedLoadForwardItems()
                                 }
                             }
+                    }
 
-                            is Page.Loaded -> {
-                                itemsIndexed(page.items) { index, item ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(64.dp)
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(text = item.symbol)
-                                        Text(
-                                            text = (valueState.perPage * parentIndex + index).toString()
-                                        )
+                    Box(modifier = modifier.fillMaxSize()) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            state = lazyColumnState
+                        ) {
+                            valueState.pages.forEachIndexed { parentIndex, page ->
+                                when (page) {
+                                    is Page.Error -> {
+                                        item {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(64.dp)
+                                                    .padding(16.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text = "Error while loading")
+                                            }
+                                        }
                                     }
-                                }
-                            }
 
-                            is Page.Loading.Simple -> {
-                                item {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(64.dp)
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(text = parentIndex.toString())
+                                    is Page.Loaded -> {
+                                        itemsIndexed(page.items) { index, item ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(64.dp)
+                                                    .padding(16.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text = item.symbol)
+                                                Text(text = item.counter.toString())
+                                                Text(
+                                                    text = (valueState.perPage * parentIndex + index).toString()
+                                                )
+                                            }
+                                        }
                                     }
-                                }
-                            }
 
-                            is Page.Loading.PageWithPlaceholders -> {
-                                itemsIndexed(page.placeholders) { index, _ ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(64.dp)
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(text = (index + parentIndex).toString())
+                                    is Page.Loading.Simple -> {
+                                        item {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(64.dp)
+                                                    .padding(16.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text = parentIndex.toString())
+                                            }
+                                        }
+                                    }
+
+                                    is Page.Loading.PageWithPlaceholders -> {
+                                        itemsIndexed(page.placeholders) { index, _ ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(64.dp)
+                                                    .padding(16.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(text = (index + parentIndex).toString())
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                is PaginationStore.State.Initialization, is PaginationStore.State.Loading -> {
+                    Box(
+                        modifier = modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
 
-        is PaginationStore.State.Initialization, is PaginationStore.State.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+        CoinsListUpdatingStore.State.Uninitialized -> {
+
         }
     }
 }

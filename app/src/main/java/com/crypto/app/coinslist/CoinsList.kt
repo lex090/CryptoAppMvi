@@ -2,17 +2,22 @@ package com.crypto.app.coinslist
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.Value
+import com.arkivanov.mvikotlin.core.binder.BinderLifecycleMode
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.bind
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.crypto.app.coinslist.domain.CoinRepository
 import com.crypto.app.coinslist.domain.ShortCoin
+import com.crypto.app.coinslist.updating.CoinsListUpdatingStore
+import com.crypto.app.coinslist.updating.CoinsListUpdatingStoreFactory
 import com.crypto.app.pagination.PaginationStore
 import com.crypto.app.pagination.PaginationStoreFactory
 import com.crypto.app.utils.asValue
 
 interface CoinsList {
 
-    val state: Value<PaginationStore.State<ShortCoin>>
+    val state: Value<CoinsListUpdatingStore.State<ShortCoin>>
 
     fun onNeedLoadForwardItems()
 }
@@ -33,7 +38,28 @@ class RealCoinsList(
         )
     }
 
-    override val state: Value<PaginationStore.State<ShortCoin>> = store.asValue()
+    private val updatingStore = instanceKeeper.getStore {
+        CoinsListUpdatingStoreFactory(
+            storeFactory = storeFactory
+        ).create()
+    }
+
+    override val state: Value<CoinsListUpdatingStore.State<ShortCoin>> = updatingStore.asValue()
+
+    init {
+        bind(lifecycle, BinderLifecycleMode.START_STOP) {
+            store.labels bindTo {
+                when (it) {
+                    is PaginationStore.Label.PagesWillBeUpdating -> {
+                        val intent = CoinsListUpdatingStore.Intent.OnNewPaginationState(
+                            state = it.state
+                        )
+                        updatingStore.accept(intent)
+                    }
+                }
+            }
+        }
+    }
 
     override fun onNeedLoadForwardItems() {
         store.accept(PaginationStore.Intent.OnPageLoad)

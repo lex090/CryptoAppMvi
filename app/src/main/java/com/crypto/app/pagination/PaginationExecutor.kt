@@ -15,11 +15,14 @@ class PaginationExecutor<T : Any>(
     override fun executeAction(action: Unit, getState: () -> State<T>) {
         val state = getState()
         scope.launch {
-            initializeStore(state)
+            initializeStore(state, getState)
         }
     }
 
-    private suspend fun initializeStore(initializationState: State<T>) {
+    private suspend fun initializeStore(
+        initializationState: State<T>,
+        getState: () -> State<T>
+    ) {
         with(initializationState) {
             if (this !is State.Initialization) {
                 throw IllegalStateException(
@@ -35,6 +38,7 @@ class PaginationExecutor<T : Any>(
                         currentPage = startingPage
                     ).also { msg ->
                         dispatch(msg)
+                        publish(Label.PagesWillBeUpdating(getState()))
                     }
                 }.onFailure {
                     dispatch(
@@ -42,6 +46,7 @@ class PaginationExecutor<T : Any>(
                             message = it.message.orEmpty()
                         )
                     )
+                    publish(Label.PagesWillBeUpdating(getState()))
                 }
         }
     }
@@ -59,7 +64,8 @@ class PaginationExecutor<T : Any>(
                             loadPage = scope.launch {
                                 loadPage(
                                     nextPage = state.nextPage,
-                                    perPage = state.perPage
+                                    perPage = state.perPage,
+                                    getState = getState
                                 )
                             }
                         }
@@ -75,7 +81,8 @@ class PaginationExecutor<T : Any>(
 
     private suspend fun loadPage(
         nextPage: Int?,
-        perPage: Int
+        perPage: Int,
+        getState: () -> State<T>
     ) {
         if (nextPage != null) {
             dispatch(
@@ -85,15 +92,18 @@ class PaginationExecutor<T : Any>(
                     )
                 )
             )
+            publish(Label.PagesWillBeUpdating(getState()))
 
             paginationRepository.loadPage(nextPage, perPage)
                 .onSuccess {
                     Message.PageLoadSuccess(page = Page.Loaded(items = it))
                         .also { msg ->
                             dispatch(msg)
+                            publish(Label.PagesWillBeUpdating(getState()))
                         }
                 }.onFailure {
                     dispatch(Message.PageLoadError)
+                    publish(Label.PagesWillBeUpdating(getState()))
                 }
         }
     }
