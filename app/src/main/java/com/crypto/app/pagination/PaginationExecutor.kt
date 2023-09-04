@@ -13,8 +13,9 @@ class PaginationExecutor<T : Any>(
 ) : CoroutineExecutor<Intent, Unit, State<T>, Message<T>, Label<T>>() {
 
     override fun executeAction(action: Unit, getState: () -> State<T>) {
+        val state = getState()
         scope.launch {
-            initializeStore(getState())
+            initializeStore(state)
         }
     }
 
