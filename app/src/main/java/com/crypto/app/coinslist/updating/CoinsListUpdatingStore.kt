@@ -6,16 +6,9 @@ import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.crypto.app.coinslist.domain.ShortCoin
 import com.crypto.app.coinslist.updating.CoinsListUpdatingStore.Intent
 import com.crypto.app.coinslist.updating.CoinsListUpdatingStore.Label
-import com.crypto.app.coinslist.updating.CoinsListUpdatingStore.State
 import com.crypto.app.pagination.PaginationStore
 
-interface CoinsListUpdatingStore<T : Any> : Store<Intent<T>, State<T>, Label> {
-    sealed interface State<out T : Any> {
-        data object Uninitialized : State<Nothing>
-        data class PaginationState<T : Any>(
-            val state: PaginationStore.State<T>,
-        ) : State<T>
-    }
+interface CoinsListUpdatingStore<T : Any> : Store<Intent<T>, PaginationStore.State<T>, Label> {
 
     sealed interface Message<out T : Any, out K : Any, out V : Any> {
 
@@ -46,11 +39,13 @@ interface CoinsListUpdatingStore<T : Any> : Store<Intent<T>, State<T>, Label> {
 class CoinsListUpdatingStoreFactory(
     private val storeFactory: StoreFactory
 ) {
-    fun create(): CoinsListUpdatingStore<ShortCoin> =
+    fun create(
+        initialState: PaginationStore.State<ShortCoin>
+    ): CoinsListUpdatingStore<ShortCoin> =
         object : CoinsListUpdatingStore<ShortCoin>,
-            Store<Intent<ShortCoin>, State<ShortCoin>, Label> by storeFactory.create(
+            Store<Intent<ShortCoin>, PaginationStore.State<ShortCoin>, Label> by storeFactory.create(
                 name = "CoinsListUpdatingStore${hashCode()}",
-                initialState = State.Uninitialized,
+                initialState = initialState,
                 bootstrapper = SimpleBootstrapper(Unit),
                 executorFactory = ::CoinsListUpdatingExecutor,
                 reducer = CoinsListUpdatingReducer()

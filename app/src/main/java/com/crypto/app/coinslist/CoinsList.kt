@@ -9,17 +9,18 @@ import com.arkivanov.mvikotlin.extensions.coroutines.bind
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.crypto.app.coinslist.domain.CoinRepository
 import com.crypto.app.coinslist.domain.ShortCoin
-import com.crypto.app.coinslist.updating.CoinsListUpdatingStore
 import com.crypto.app.coinslist.updating.CoinsListUpdatingStoreFactory
+import com.crypto.app.coinslist.updating.labelToIntent
 import com.crypto.app.pagination.PaginationStore
 import com.crypto.app.pagination.PaginationStoreFactory
 import com.crypto.app.utils.asValue
+import kotlinx.coroutines.flow.map
 
 interface CoinsList {
 
-    val state: Value<CoinsListUpdatingStore.State<ShortCoin>>
+    val state: Value<PaginationStore.State<ShortCoin>>
 
-    fun onNeedLoadForwardItems()
+    fun onLoadPage()
 }
 
 class RealCoinsList(
@@ -39,29 +40,19 @@ class RealCoinsList(
     }
 
     private val updatingStore = instanceKeeper.getStore {
-        CoinsListUpdatingStoreFactory(
-            storeFactory = storeFactory
-        ).create()
+        CoinsListUpdatingStoreFactory(storeFactory = storeFactory)
+            .create(store.state)
     }
 
-    override val state: Value<CoinsListUpdatingStore.State<ShortCoin>> = updatingStore.asValue()
+    override val state: Value<PaginationStore.State<ShortCoin>> = updatingStore.asValue()
 
     init {
         bind(lifecycle, BinderLifecycleMode.START_STOP) {
-            store.labels bindTo {
-                when (it) {
-                    is PaginationStore.Label.PagesWillBeUpdating -> {
-                        val intent = CoinsListUpdatingStore.Intent.OnNewPaginationState(
-                            state = it.state
-                        )
-                        updatingStore.accept(intent)
-                    }
-                }
-            }
+            store.labels.map(labelToIntent) bindTo updatingStore::accept
         }
     }
 
-    override fun onNeedLoadForwardItems() {
+    override fun onLoadPage() {
         store.accept(PaginationStore.Intent.OnPageLoad)
     }
 }
