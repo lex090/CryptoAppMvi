@@ -57,7 +57,7 @@ class PaginationExecutor<T : Any>(
         getState: () -> State<T>
     ) {
         when (intent) {
-            Intent.OnPageLoad -> {
+            Intent.OnLoadPage -> {
                 when (val state = getState()) {
                     is State.Loaded -> {
                         if (loadPage?.isActive != true) {

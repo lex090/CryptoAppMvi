@@ -59,7 +59,7 @@ interface PaginationStore<T : Any> : Store<Intent, State<T>, Label<T>> {
 
         data object Refresh : Intent
 
-        data object OnPageLoad : Intent
+        data object OnLoadPage : Intent
     }
 
     sealed interface Label<T : Any> {

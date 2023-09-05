@@ -64,6 +64,6 @@ class RealCoinsList(
     }
 
     override fun onLoadPage() {
-        store.accept(PaginationStore.Intent.OnPageLoad)
+        store.accept(PaginationStore.Intent.OnLoadPage)
     }
 }
