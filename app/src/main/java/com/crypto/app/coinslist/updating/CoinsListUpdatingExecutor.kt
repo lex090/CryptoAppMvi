@@ -11,7 +11,6 @@ import com.crypto.app.pagination.onlyLoaded
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 class CoinsListUpdatingExecutor :
     CoroutineExecutor<Intent<ShortCoin>, Unit, PaginationStore.State<ShortCoin>, Message<ShortCoin, CoinId, CoinListUpdatingData>, Label>() {
@@ -31,32 +30,44 @@ class CoinsListUpdatingExecutor :
                 )
                 updating?.cancel()
                 updating = scope.launch {
-                    when (val state = getState()) {
-                        is PaginationStore.State.Loaded -> {
-                            while (true) {
-                                delay(1000)
-                                HashMap(state
-                                    .pages
-                                    .onlyLoaded()
-                                    .flatMap { it.items }
-                                    .associate {
-                                        it.id to CoinListUpdatingData(counter)
-                                    }
-                                ).also {
-                                    dispatch(Message.UpdatedData(items = it))
-                                    counter++
-                                }
-                                yield()
-                            }
-                        }
+                    subscribeOnUpdating(intent.state)
+                }
+            }
 
-                        else -> TODO()
+            Intent.Subscribe -> {
+                if (updating?.isActive != true) {
+                    updating = scope.launch {
+                        subscribeOnUpdating(getState())
                     }
                 }
             }
 
-            Intent.Subscribe -> TODO()
-            Intent.Unsubscribe -> TODO()
+            Intent.Unsubscribe -> {
+                updating?.cancel()
+            }
+        }
+    }
+
+    private suspend fun subscribeOnUpdating(state: PaginationStore.State<ShortCoin>) {
+        when (state) {
+            is PaginationStore.State.Loaded -> {
+                while (true) {
+                    delay(1000)
+                    HashMap(state
+                        .pages
+                        .onlyLoaded()
+                        .flatMap { it.items }
+                        .associate {
+                            it.id to CoinListUpdatingData(counter)
+                        }
+                    ).also {
+                        dispatch(Message.UpdatedData(items = it))
+                        counter++
+                    }
+                }
+            }
+
+            else -> {}
         }
     }
 }
