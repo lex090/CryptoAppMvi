@@ -13,8 +13,8 @@ data class CoinResponse(
     val name: String? = "",
     @Json(name = "price_change_percentage_24h")
     val priceChangePercentage24H: Double? = 0.0,
-    @Json(name = "image")
-    val image: String? = "",
+//    @Json(name = "image")
+//    val image: String? = "",
     @Json(name = "current_price")
     val currentPrice: Double? = 0.0,
     @Json(name = "market_cap")

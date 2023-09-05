@@ -32,7 +32,9 @@ interface CoinsListUpdatingStore<T : Any> : Store<Intent<T>, PaginationStore.Sta
     }
 
     sealed interface Label {
-        data class FailedUpdate(val message: String) : Label
+        data class StateWillBeUpdated(
+            val state: PaginationStore.State<ShortCoin>
+        ) : Label
     }
 }
 

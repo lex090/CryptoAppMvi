@@ -9,6 +9,7 @@ import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.bind
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
+import com.crypto.app.coinslist.domain.CoinId
 import com.crypto.app.coinslist.domain.CoinRepository
 import com.crypto.app.coinslist.domain.ShortCoin
 import com.crypto.app.coinslist.updating.CoinsListUpdatingStore
@@ -21,9 +22,11 @@ import kotlinx.coroutines.flow.map
 
 interface CoinsList {
 
-    val state: Value<PaginationStore.State<ShortCoin>>
+    val state: Value<CoinListStore.CoinListState>
 
     fun onLoadPage()
+
+    fun onLoadCoinInfo(coinId: CoinId)
 }
 
 class RealCoinsList(
@@ -47,11 +50,19 @@ class RealCoinsList(
             .create(store.state)
     }
 
-    override val state: Value<PaginationStore.State<ShortCoin>> = updatingStore.asValue()
+    private val coinListStore = instanceKeeper.getStore {
+        CoinListStoreFactory(
+            repository = repository,
+            storeFactory = storeFactory
+        ).create(updatingStore.state)
+    }
+
+    override val state: Value<CoinListStore.CoinListState> = coinListStore.asValue()
 
     init {
         bind(lifecycle, BinderLifecycleMode.CREATE_DESTROY) {
-            store.labels.map(labelToIntent) bindTo updatingStore::accept
+            store.labels.map(::labelToIntent) bindTo updatingStore::accept
+            updatingStore.labels.map(::labelToIntent) bindTo coinListStore::accept
         }
 
         lifecycle.doOnStart {
@@ -65,5 +76,9 @@ class RealCoinsList(
 
     override fun onLoadPage() {
         store.accept(PaginationStore.Intent.OnLoadPage)
+    }
+
+    override fun onLoadCoinInfo(coinId: CoinId) {
+        coinListStore.accept(CoinListStore.Intent.OnCoinInfoLoad(coinId))
     }
 }

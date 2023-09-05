@@ -1,7 +1,10 @@
 package com.crypto.app.coinslist
 
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +33,7 @@ fun CoinsListContent(
     modifier: Modifier = Modifier
 ) {
     val state = component.state.subscribeAsState()
-    when (val valueState = state.value) {
+    when (val valueState = state.value.state) {
         is PaginationStore.State.Empty -> {
             Box(
                 modifier = modifier.fillMaxSize(),
@@ -91,18 +94,65 @@ fun CoinsListContent(
 
                             is Page.Loaded -> {
                                 itemsIndexed(page.items) { index, item ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(64.dp)
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(text = item.symbol)
-                                        Text(text = item.counter.toString())
-                                        Text(
-                                            text = (valueState.perPage * parentIndex + index).toString()
-                                        )
+                                    Column {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(64.dp)
+                                                .padding(16.dp)
+                                                .clickable {
+                                                    component.onLoadCoinInfo(item.id)
+                                                },
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(text = item.symbol)
+                                            Text(text = item.counter.toString())
+                                            Text(
+                                                text = (valueState.perPage * parentIndex + index).toString()
+                                            )
+                                        }
+                                        if (state.value.additionCoinInfo.containsKey(item.id)) {
+                                            when (val fullInfo =
+                                                state.value.additionCoinInfo[item.id]) {
+                                                is FullInfoCoin.Error -> {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(64.dp)
+                                                            .padding(16.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Text(text = fullInfo.msg)
+                                                    }
+                                                }
+
+                                                is FullInfoCoin.Loaded -> {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(64.dp)
+                                                            .padding(16.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Text(text = fullInfo.data.name)
+                                                    }
+                                                }
+
+                                                FullInfoCoin.Loading -> {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(64.dp)
+                                                            .padding(16.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        CircularProgressIndicator()
+                                                    }
+                                                }
+
+                                                null -> IllegalStateException()
+                                            }
+                                        }
                                     }
                                 }
                             }

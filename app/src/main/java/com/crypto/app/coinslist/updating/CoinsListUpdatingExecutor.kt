@@ -27,16 +27,24 @@ class CoinsListUpdatingExecutor(
                         state = intent.state
                     )
                 )
+                publish(Label.StateWillBeUpdated(getState()))
+
                 updating?.cancel()
                 updating = scope.launch {
-                    subscribeOnUpdating(intent.state)
+                    subscribeOnUpdating(
+                        intent.state,
+                        getState
+                    )
                 }
             }
 
             Intent.Subscribe -> {
                 if (updating?.isActive != true) {
                     updating = scope.launch {
-                        subscribeOnUpdating(getState())
+                        subscribeOnUpdating(
+                            getState(),
+                            getState
+                        )
                     }
                 }
             }
@@ -47,7 +55,10 @@ class CoinsListUpdatingExecutor(
         }
     }
 
-    private suspend fun subscribeOnUpdating(state: PaginationStore.State<ShortCoin>) {
+    private suspend fun subscribeOnUpdating(
+        state: PaginationStore.State<ShortCoin>,
+        getState: () -> PaginationStore.State<ShortCoin>
+    ) {
         when (state) {
             is PaginationStore.State.Loaded -> {
                 state.pages
@@ -57,6 +68,7 @@ class CoinsListUpdatingExecutor(
                         repository.subscribeOnCounterUpdating(coinsList)
                             .collect {
                                 dispatch(Message.UpdatedData(items = it))
+                                publish(Label.StateWillBeUpdated(getState()))
                             }
                     }
             }
