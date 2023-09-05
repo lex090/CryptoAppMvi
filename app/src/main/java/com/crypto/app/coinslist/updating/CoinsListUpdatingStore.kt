@@ -47,7 +47,9 @@ class CoinsListUpdatingStoreFactory(
                 name = "CoinsListUpdatingStore${hashCode()}",
                 initialState = initialState,
                 bootstrapper = SimpleBootstrapper(Unit),
-                executorFactory = ::CoinsListUpdatingExecutor,
+                executorFactory = {
+                    CoinsListUpdatingExecutor(CoinListUpdatingRepositoryImpl())
+                },
                 reducer = CoinsListUpdatingReducer()
             ) {}
 }

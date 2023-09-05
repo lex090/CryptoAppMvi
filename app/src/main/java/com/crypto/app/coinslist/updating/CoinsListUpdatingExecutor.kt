@@ -9,13 +9,12 @@ import com.crypto.app.coinslist.updating.CoinsListUpdatingStore.Message
 import com.crypto.app.pagination.PaginationStore
 import com.crypto.app.pagination.onlyLoaded
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class CoinsListUpdatingExecutor :
-    CoroutineExecutor<Intent<ShortCoin>, Unit, PaginationStore.State<ShortCoin>, Message<ShortCoin, CoinId, CoinListUpdatingData>, Label>() {
+class CoinsListUpdatingExecutor(
+    private val repository: CoinListUpdatingRepository
+) : CoroutineExecutor<Intent<ShortCoin>, Unit, PaginationStore.State<ShortCoin>, Message<ShortCoin, CoinId, CoinListUpdatingData>, Label>() {
 
-    private var counter = 0
     private var updating: Job? = null
     override fun executeIntent(
         intent: Intent<ShortCoin>,
@@ -51,20 +50,15 @@ class CoinsListUpdatingExecutor :
     private suspend fun subscribeOnUpdating(state: PaginationStore.State<ShortCoin>) {
         when (state) {
             is PaginationStore.State.Loaded -> {
-                while (true) {
-                    delay(1000)
-                    HashMap(state
-                        .pages
-                        .onlyLoaded()
-                        .flatMap { it.items }
-                        .associate {
-                            it.id to CoinListUpdatingData(counter)
-                        }
-                    ).also {
-                        dispatch(Message.UpdatedData(items = it))
-                        counter++
+                state.pages
+                    .onlyLoaded()
+                    .flatMap { it.items }
+                    .also { coinsList ->
+                        repository.subscribeOnCounterUpdating(coinsList)
+                            .collect {
+                                dispatch(Message.UpdatedData(items = it))
+                            }
                     }
-                }
             }
 
             else -> {}
