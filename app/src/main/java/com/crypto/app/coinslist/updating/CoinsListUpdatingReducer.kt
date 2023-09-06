@@ -42,7 +42,42 @@ class CoinsListUpdatingReducer :
                 }
             }
 
-            is Message.NewPaginationState -> msg.state
+            is Message.NewPaginationState -> {
+                when (msg.state) {
+                    is PaginationStore.State.Loaded -> {
+                        when (this) {
+                            is PaginationStore.State.Loaded -> {
+                                val coinsCounterMap = pages.flatMap {
+                                    when (it) {
+                                        is Page.Loaded -> it.items
+                                        else -> emptyList()
+                                    }
+                                }.associate { it.id to it.counter }
+
+                                msg.state.pages.map { page ->
+                                    if (page is Page.Loaded) {
+                                        page.copy(
+                                            items = page.items.map { shortCoin ->
+                                                coinsCounterMap[shortCoin.id]
+                                                    ?.let { shortCoin.copy(counter = it) }
+                                                    ?: shortCoin
+                                            }
+                                        )
+                                    } else {
+                                        page
+                                    }
+                                }.let {
+                                    copy(pages = it)
+                                }
+                            }
+
+                            else -> msg.state
+                        }
+                    }
+
+                    else -> msg.state
+                }
+            }
         }
     }
 }
